@@ -2,7 +2,7 @@
 
 A command-line argument tool that narrows down possible Wordle answers based on the feedback from each guess.
 
-<img src="download.png" width="30" height="30">
+<img src="download.png" width="40">
 
 Wordle is a simple 5-letter word game, where you input words and attempt to find the answer via deduction.
 
