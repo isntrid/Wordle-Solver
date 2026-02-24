@@ -1,8 +1,6 @@
-# Wordle Solver 🔤
+# Wordle Solver <img src="download.png" width="80">
 
 A command-line argument tool that narrows down possible Wordle answers based on the feedback from each guess.
-
-<img src="download.png" width="80">
 
 Wordle is a simple 5-letter word game, where you input words and attempt to find the answer via deduction.
 
