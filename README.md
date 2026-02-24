@@ -30,7 +30,16 @@ For me, my only yellow was 'a', so I enter that. There is no need to input the g
 - I then pick the word 'attic,' which happens to be the exact word. All letters are green, and then I tell the program that I am finished.
 - You have solved Wordle.
 
-<img src="wordl1.png" width="120"> <img src="wordle2.png" height="100"> 
+<table>
+  <tr>
+    <td align="center"><b>Wordle</b></td>
+    <td align="center"><b>Solver Output</b></td>
+  </tr>
+  <tr>
+    <td><img src="wordl1.png" width="250"></td>
+    <td><img src="wordle2.png" width="350"></td>
+  </tr>
+</table>
 
 
 ## Requirements
