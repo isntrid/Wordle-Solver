@@ -1,5 +1,5 @@
 from typing import List
-# 
+
 def get_words() -> List[str]:
     '''
     This function looks at words.txt, a text file containing hundreds of thousands of words
@@ -7,7 +7,7 @@ def get_words() -> List[str]:
     
     Returns:
         words List[str]: contains a list of every valid word.
-        
+
     Raises:
         FileNotFoundError: No valid word or dictionary of words list was found.
         PermissionError: Program was denied permission to access and read dictionary file.
