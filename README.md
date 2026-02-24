@@ -19,16 +19,18 @@ Wordle is a simple 5-letter word game, where you input words and attempt to find
 
 ## Usage
 
-- Enter in a word of your choice into Wordle, i will be using 'soare' for this example
+- Enter in a word of your choice into Wordle, I will be using 'soare' for this example
 - Enter the word and the results of it into the program. For me, only 'a' was yellow, and everything else was grey.
 - The program asks you for what letters were green. If none were green, then enter 'none'.
-For me, my only yellow was 'a', so i enter that. There is no need to input the grey letters.
+For me, my only yellow was 'a', so I enter that. There is no need to input the grey letters.
 - The program returns a list of words, of which you can pick any. I picked 'admit.'
 - In 'admit', the 'a' and 'i' were green, while the 't' was yellow.
-- Now, i tell the program that i am not finished and repeat the process
-- For greens, i input 'ai', for yelows i input 't', and then i can pick another word.
-- I then pick the word 'attic,' which happens to be the exact word. All letters are green, and then i tell the program that i am finished.
+- Now, I tell the program that I am not finished and repeat the process
+- For greens, I input 'ai', for yellows I input 't', and then i can pick another word.
+- I then pick the word 'attic,' which happens to be the exact word. All letters are green, and then I tell the program that I am finished.
 - You have solved Wordle.
+
+<img src="wordl1.png" width="200"> 
 
 ## Requirements
 
