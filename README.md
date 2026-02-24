@@ -1,4 +1,4 @@
-# Wordle Solver <img src="download.png" width="80">
+# Wordle Solver <img src="download.png" width="30">
 
 A command-line argument tool that narrows down possible Wordle answers based on the feedback from each guess.
 
