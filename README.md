@@ -13,31 +13,27 @@ Wordle is a simple 5-letter word game, where you input words and attempt to find
 ## Features
 
 - The program automatically finds the grey letters in your word. Meaning, you only have to input the green and yellow letters. Greys are handled for you.
-- Total possible word count is shown each turn.
+- The total possible word count is shown each turn.
 - Filters every word for you
 - Simple and easy to understand prompting.  
 
 ## Usage
 
 - Enter in a word of your choice into Wordle, I will be using 'soare' for this example
-- Enter the word and the results of it into the program. For me, only 'a' was yellow, and everything else was grey.
-- The program asks you for what letters were green. If none were green, then enter 'none'.
-For me, my only yellow was 'a', so I enter that. There is no need to input the grey letters.
-- The program returns a list of words, of which you can pick any. I picked 'admit.'
-- In 'admit', the 'a' and 'i' were green, while the 't' was yellow.
-- Now, I tell the program that I am not finished and repeat the process
-- For greens, I input 'ai', for yellows I input 't', and then i can pick another word.
-- I then pick the word 'attic,' which happens to be the exact word. All letters are green, and then I tell the program that I am finished.
+- Enter the word and the results of it into the program. For me, only 'o' was yellow, the 'e' was green, and everything else was grey.
+- The program returns the best word to guess next. For me, that was 'oldie'
+- In 'oldie,' the 'o' and 'e' were green, while the 'd' and 'i' were yellow and 'l' was grey.
+- The solver tells me to guess 'oxide' next, which is the correct answer. 
 - You have solved Wordle.
 
 <table>
   <tr>
-    <td align="center"><b>Wordle</b></td>
-    <td align="center"><b>Solver Output</b></td>
+    <td align="center"><b>Solver</b></td>
+    <td align="center"><b>Wordle Output</b></td>
   </tr>
   <tr>
-    <td><img src="wordl1.png" width="250"></td>
     <td><img src="wordle2.png" width="350"></td>
+    <td><img src="wordl1.png" width="250"></td>
   </tr>
 </table>
 
@@ -45,3 +41,4 @@ For me, my only yellow was 'a', so I enter that. There is no need to input the g
 ## Requirements
 
 - Python 3.8+
+- A word bank (I used the Wordle one on Github)

@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Any
+
+# make it so program returns top 5 best words
 
 def get_words() -> List[str]:
     '''
@@ -61,7 +63,8 @@ def get_input() -> str:
         return word
     raise ValueError("Too many invalid attempts.")
 
-def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = None, overall_grey: List[str] = None) -> List[str]:
+def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = None, overall_grey: List[str] = None) -> \
+tuple[list[str] | list[Any], list[str] | list[Any], list[str] | list[Any], str]:
     '''
 
     This function is used to both keep track of the overall information of the game, as well as
