@@ -1,7 +1,5 @@
 from typing import List, Any
 
-
-
 def get_words() -> List[str]:
     '''
     This function looks at words.txt, a text file containing hundreds of thousands of words
@@ -14,7 +12,6 @@ def get_words() -> List[str]:
         FileNotFoundError: No valid word or dictionary of words list was found.
         PermissionError: Program was denied permission to access and read dictionary file.
     '''
-
     try:
         with open("words.txt", 'r') as w:
             lines = w.readlines()
@@ -22,7 +19,7 @@ def get_words() -> List[str]:
                 word for w in lines
                 if (word := w.strip().lower()).isalpha()
                 and word.isascii() and len(word) == 5
-                ]
+            ]
     except FileNotFoundError as e:
         raise FileNotFoundError("No word / dictionary file was found.") from e
     except PermissionError as e:
@@ -39,34 +36,26 @@ def get_input() -> str:
     Raises:
         ValueError: User failed to input a valid word in the given 5 attempts.
     '''
-
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
         word = input("Word: ").strip().lower()
-
         if not word:
             print("Empty input. Try again.")
             continue
-
         if len(word) != 5:
             print("Word must be 5 letters.")
             continue
-
         if not word.isascii():
             print("Only standard English letters allowed.")
             continue
-
         if not word.isalpha():
             print("No numbers or punctuation.")
             continue
-
         return word
     raise ValueError("Too many invalid attempts.")
 
-def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = None, overall_grey: List[str] = None) -> \
-tuple[list[str] | list[Any], list[str] | list[Any], list[str] | list[Any], str]:
+def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = None, overall_grey: List[str] = None ) -> tuple[list[str], list[str], list[str], str]:
     '''
-
     This function is used to both keep track of the overall information of the game, as well as
     create and fill the overall colour lists.
 
@@ -78,28 +67,22 @@ tuple[list[str] | list[Any], list[str] | list[Any], list[str] | list[Any], str]:
     Returns:
         letters List[char]: A list of the given colour type.
     '''
-
     if overall_green is None:
         overall_green = []
     if overall_yellow is None:
         overall_yellow = []
     if overall_grey is None:
         overall_grey = []
-
     choice = get_input()
-
     greens = get_feedback_letters("greens", choice)
     yellows = get_feedback_letters("yellow", choice)
     greys = list(choice)
-
     for letter in greens + yellows:
         if letter in greys:
             greys.remove(letter)
-
     overall_green.extend(greens)
     overall_yellow.extend(yellows)
     overall_grey.extend(greys)
-
     return overall_green, overall_yellow, overall_grey, choice
 
 def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
@@ -116,13 +99,13 @@ def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
     '''
     letters = []
     while True:
-            letters = input(f"What letters were {colour_name}? Enter none if no letters of that type were found: ").strip().lower()
-            if letters == "none":
-                return []
-            elif any(char not in choice for char in list(letters)):
-                print(f"A letter was not found in {choice}. Try again.")
-            else:
-                break
+        letters = input(f"What letters were {colour_name}? Enter none if no letters of that type were found: ").strip().lower()
+        if letters == "none":
+            return []
+        elif any(char not in choice for char in list(letters)):
+            print(f"A letter was not found in {choice}. Try again.")
+        else:
+            break
     return list(letters)
 
 def compile_colours(green: List[str], grey: List[str], yellow: List[str], choice: str) -> List[str]:
@@ -141,47 +124,35 @@ def compile_colours(green: List[str], grey: List[str], yellow: List[str], choice
         grey_letters List[str]: A list of the grey letters
         yellow_letters List[str]: A list of the yellow letters
     '''
-
     green_letters = {}
     yellow_letters = {}
     grey_letters = []
-
     for pos, char in enumerate(choice):
         if char in green:
             green_letters[pos] = char
-
         if char in yellow:
             yellow_letters.setdefault(char, []).append(pos)
-
         if char in grey and char not in green and char not in yellow:
             grey_letters.append(char)
-
     return green_letters, yellow_letters, grey_letters
 
-def get_frequency_score(valid_words_list: List[str]) -> int:
-
+def get_frequency_score(valid_words_list: List[str]) -> List[str]:
     alphabet = {}
-
     for word in valid_words_list:
         for letter in word:
             if letter not in alphabet:
                 alphabet[letter] = 1
             else:
                 alphabet[letter] += 1
-
     # sort alphabet by frequency descending
-    sorted_alphabet = {k: v for k, v in sorted(alphabet.items(),
-        key=lambda item: item[1],
-        reverse=True)}
-
+    sorted_alphabet = {k: v for k, v in sorted(alphabet.items(), key=lambda item: item[1], reverse=True)}
     scores = []
     for word in valid_words_list:
         word_score = sum(sorted_alphabet[letter] for letter in set(word))
         scores.append((word_score, word))
-
-    best_word = max(scores)
-
-    return best_word[1]
+    # getting the 5 highest scoring words
+    best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
+    return best_words
 
 def find_words(green: List[str], yellow: List[str], grey: List[str], valid_words_list: List[str]) -> str:
     """
@@ -192,36 +163,25 @@ def find_words(green: List[str], yellow: List[str], grey: List[str], valid_words
         grey List[str]: A list of the grey letters
         yellow List[str]: A list of the yellow letters
     """
-
     valid = []
-
     for word in valid_words_list:
-
         if any(letter in word for letter in grey):
             continue
-
         if any(word[pos] != letter for pos, letter in green.items()):
             continue
-
         bad_yellow = False
         for letter, positions in yellow.items():
-
             if letter not in word:
                 bad_yellow = True
                 break
-
             if any(word[pos] == letter for pos in positions):
                 bad_yellow = True
                 break
-
         if bad_yellow:
             continue
-
         valid.append(word)
-
-    best_word = get_frequency_score(valid)
-
-    return valid, best_word
+    best_words = get_frequency_score(valid)
+    return valid, best_words
 
 def continue_program(overall_green: List[str], overall_yellow: List[str], overall_grey: List[str], valid_words: List[str]) -> None:
     '''
@@ -236,48 +196,42 @@ def continue_program(overall_green: List[str], overall_yellow: List[str], overal
         overall_grey List[str]: a list of all the grey letters
         overall_yellow List[str]: a list of all the yellow letters
     '''
-
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
-        word = input("Are you finished? ").strip().lower()
-
+        word = input("\nAre you finished? ").strip().lower()
         if not word:
             print("Empty input. Try again.")
             continue
-
         if not word.isascii():
             print("Only standard English letters allowed.")
             continue
-
         if not word.isalpha():
             print("No numbers or punctuation.")
             continue
-
         if word in ["y", "yes"]:
             print("You successfully have solved Wordle.")
             exit(0)
         else:
             overall_green, overall_yellow, overall_grey = [], [], []
-
             overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
             green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
-            valid_words, best_word = find_words(green_letters, yellow_letters, grey_letters, valid_words)
-            print(best_word)
-
+            valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+            print("Pick one:")
+            for word in best_words:
+                print(word, end=" ")
     raise ValueError("Too many invalid attempts.")
 
 def main():
     overall_green = []
     overall_yellow = []
     overall_grey = []
-
     valid_words = get_words()
-
     overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
     green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
-
-    valid_words, best_word = find_words(green_letters, yellow_letters, grey_letters, valid_words)
-    print(best_word)
+    valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+    print("Pick one:")
+    for word in best_words:
+        print(word, end=" ")
     continue_program(overall_green, overall_yellow, overall_grey, valid_words)
 
 if __name__ == "__main__":
