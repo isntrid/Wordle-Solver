@@ -1,6 +1,6 @@
 from typing import List, Any
 
-# make it so program returns top 5 best words
+
 
 def get_words() -> List[str]:
     '''
