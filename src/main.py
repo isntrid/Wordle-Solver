@@ -1,20 +1,24 @@
+
 from typing import List, Dict, Any
+from pathlib import Path
+
+WORD_FILE = Path(__file__).with_name("words.txt")
 
 
 def get_words() -> List[str]:
     """
-    This function looks at words.txt, a text file containing hundreds of thousands of words
-    and then puts any 5 letter, English words that have no numbers into a list and returns it.
+    This function looks at words.txt, a text file containing many words, and collects any
+    5-letter English words that contain only letters (no numbers/punctuation).
 
     Returns:
-        words List[str]: contains a list of every valid word.
+        List[str]: A list of valid 5-letter words.
 
     Raises:
-        FileNotFoundError: No valid word or dictionary of words list was found.
+        FileNotFoundError: No word/dictionary file was found.
         PermissionError: Program was denied permission to access and read a dictionary file.
     """
     try:
-        with open("words.txt", 'r') as w:
+        with open(WORD_FILE, 'r') as w:
             lines = w.readlines()
             words = [
                 word for w in lines
@@ -29,13 +33,13 @@ def get_words() -> List[str]:
 
 def get_input() -> str:
     """
-    This function asks the user to input the word they chose.
+    Prompt the user for a 5-letter guess word.
 
     Returns:
-        word [str]: Holds the word that the user inputted.
+        str: The validated 5-letter word entered by the user.
 
     Raises:
-        ValueError: User failed to input a valid word in the given 5 attempts.
+        ValueError: Too many invalid attempts.
     """
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
@@ -55,18 +59,26 @@ def get_input() -> str:
         return word
     raise ValueError("Too many invalid attempts.")
 
-def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = None, overall_grey: List[str] = None ) -> tuple[list[str], list[str], list[str], str]:
+def get_colours(
+    overall_green: List[str] = None,
+    overall_yellow: List[str] = None,
+    overall_grey: List[str] = None
+) -> tuple[list[str], list[str], list[str], str]:
     """
-    This function is used to both keep track of the overall information of the game and
-    create and fill the overall colour lists.
+    Collect feedback information for a guess and accumulate it across turns.
 
     Args:
-        overall_green List[str] (default: None): A list of all the green letters
-        overall_grey List[str] (default: None): A list of all the grey letters
-        overall_yellow List[str] (default: None): A list of all the yellow letters
+        overall_green (List[str] | None): Accumulated green letters so far.
+        overall_yellow (List[str] | None): Accumulated yellow letters so far.
+        overall_grey (List[str] | None): Accumulated grey letters so far.
 
     Returns:
-        letters List[char]: A list of the given colour type.
+        tuple[list[str], list[str], list[str], str]:
+            (overall_green, overall_yellow, overall_grey, choice) where:
+            - overall_green: all green letters seen so far
+            - overall_yellow: all yellow letters seen so far
+            - overall_grey: all grey letters seen so far
+            - choice: the user's guessed word for this turn
     """
     if overall_green is None:
         overall_green = []
@@ -74,13 +86,16 @@ def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = Non
         overall_yellow = []
     if overall_grey is None:
         overall_grey = []
+
     choice = get_input()
     greens = get_feedback_letters("greens", choice)
     yellows = get_feedback_letters("yellow", choice)
     greys = list(choice)
+
     for letter in greens + yellows:
         if letter in greys:
             greys.remove(letter)
+
     overall_green.extend(greens)
     overall_yellow.extend(yellows)
     overall_grey.extend(greys)
@@ -88,19 +103,19 @@ def get_colours(overall_green: List[str] = None, overall_yellow: List[str] = Non
 
 def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
     """
-    This function is used in get_colours() to find out what letters of the user's word were
-    what colours.
+    Ask the user which letters in their guess were a given colour.
 
     Args:
-        colour_name [str]: The colour name (green, yellow, or grey).
-        Choice [str]: The user's chosen word.
+        colour_name (str): The colour name ("green", "yellow", or "grey").
+        choice (str): The user's chosen word.
 
     Returns:
-        letters List[char]: A list of the given colour type.
+        List[str]: The letters (as single-character strings) of the given colour type.
     """
-
     while True:
-        letters = input(f"What letters were {colour_name}? Enter none if no letters of that type were found: ").strip().lower()
+        letters = input(
+            f"What letters were {colour_name}? Enter none if no letters of that type were found: "
+        ).strip().lower()
         if letters == "none":
             return []
         elif any(char not in choice for char in list(letters)):
@@ -109,25 +124,32 @@ def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
             break
     return list(letters)
 
-def compile_colours(green: List[str], grey: List[str], yellow: List[str], choice: str) -> tuple[dict[Any, Any], dict[Any, Any], list[Any]]:
+def compile_colours(
+    green: List[str],
+    grey: List[str],
+    yellow: List[str],
+    choice: str
+) -> tuple[dict[Any, Any], dict[Any, Any], list[Any]]:
     """
-    This function compiles a list (not a literal list) of the 3 colour types, which will be
-    used later as criteria for finding valid words.
+    Convert per-turn colour feedback into structures used for filtering valid words.
 
     Args:
-        green List[str]: A list of the green letters
-        grey List[str]: A list of the grey letters
-        yellow List[str]: A list of the yellow letters
-        choice [str]: The user's inputted word
+        green (List[str]): Letters marked green in the guess.
+        grey (List[str]): Letters marked grey in the guess.
+        yellow (List[str]): Letters marked yellow in the guess.
+        choice (str): The user's guessed word.
 
     Returns:
-        green_letters List[str]: A list of the green letters
-        grey_letters List[str]: A list of the grey letters
-        yellow_letters List[str]: A list of the yellow letters
+        tuple[dict[int, str], dict[str, list[int]], list[str]]:
+            (green_letters, yellow_letters, grey_letters) where:
+            - green_letters maps index -> correct letter
+            - yellow_letters maps letter -> list of indices where that letter is NOT allowed
+            - grey_letters is a list of letters not in the answer (excluding known green/yellow)
     """
     green_letters = {}
     yellow_letters = {}
     grey_letters = []
+
     for pos, char in enumerate(choice):
         if char in green:
             green_letters[pos] = char
@@ -135,10 +157,21 @@ def compile_colours(green: List[str], grey: List[str], yellow: List[str], choice
             yellow_letters.setdefault(char, []).append(pos)
         if char in grey and char not in green and char not in yellow:
             grey_letters.append(char)
+
     return green_letters, yellow_letters, grey_letters
 
 def get_frequency_score(valid_words_list: List[str]) -> List[str]:
+    """
+    Score candidate words by letter frequency across the candidate list and return the top 5.
 
+    Each word's score is computed as the sum of frequencies of its unique letters.
+
+    Args:
+        valid_words_list (List[str]): Candidate words to score.
+
+    Returns:
+        List[str]: Up to 5 highest-scoring words (best first).
+    """
     alphabet = {}
     for word in valid_words_list:
         for letter in word:
@@ -148,7 +181,9 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
                 alphabet[letter] += 1
 
     # sort alphabet by frequency descending
-    sorted_alphabet = {k: v for k, v in sorted(alphabet.items(), key=lambda item: item[1], reverse=True)}
+    sorted_alphabet = {
+        k: v for k, v in sorted(alphabet.items(), key=lambda item: item[1], reverse=True)
+    }
 
     scores = []
     for word in valid_words_list:
@@ -157,18 +192,27 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
 
     # getting the 5 highest scoring words
     best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
-
     return best_words
 
-def find_words(green: Dict[int, str], yellow: Dict[str, list], grey: List[str], valid_words_list: List[str]) -> tuple[
-    list[Any], list[str]]:
+def find_words(
+    green: Dict[int, str],
+    yellow: Dict[str, list],
+    grey: List[str],
+    valid_words_list: List[str]
+) -> tuple[list[Any], list[str]]:
     """
-    This function finds all words that could possibly be the answer to the Wordle.
+    Filter the word list down to words consistent with known green/yellow/grey constraints.
 
     Args:
-        green List[str]: A list of the green letters
-        grey List[str]: A list of the grey letters
-        yellow List[str]: A list of the yellow letters
+        green (Dict[int, str]): Known green letters by position (index -> letter).
+        yellow (Dict[str, list[int]]): Known yellow letters (letter -> list of forbidden positions).
+        grey (List[str]): Letters that must not appear in the word.
+        valid_words_list (List[str]): Words to filter.
+
+    Returns:
+        tuple[List[str], List[str]]: (valid, best_words) where:
+            - valid is the filtered list of possible answers
+            - best_words is up to 5 recommended guesses from valid
     """
     valid = []
     for word in valid_words_list:
@@ -176,6 +220,7 @@ def find_words(green: Dict[int, str], yellow: Dict[str, list], grey: List[str], 
             continue
         if any(word[pos] != letter for pos, letter in green.items()):
             continue
+
         bad_yellow = False
         for letter, positions in yellow.items():
             if letter not in word:
@@ -184,24 +229,24 @@ def find_words(green: Dict[int, str], yellow: Dict[str, list], grey: List[str], 
             if any(word[pos] == letter for pos in positions):
                 bad_yellow = True
                 break
+
         if bad_yellow:
             continue
+
         valid.append(word)
+
     best_words = get_frequency_score(valid)
     return valid, best_words
 
 def continue_program(valid_words: List[str]) -> None:
     """
-    This function acts as the looping logic. It allows the user to continue passing words in,
-    such that they can narrow down the answer.
-
-    Raises:
-        ValueError: User failed to input a valid word in the given 5 attempts.
+    Loop to continue receiving feedback and printing recommended next guesses.
 
     Args:
-        overall_green List[str]: a list of all the green letters
-        overall_grey List[str]: a list of all the grey letters
-        overall_yellow List[str]: a list of all the yellow letters
+        valid_words (List[str]): Current list of candidate words to continue filtering.
+
+    Raises:
+        ValueError: Too many invalid attempts.
     """
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
