@@ -26,16 +26,16 @@ Wordle is a simple 5-letter word game, where you input words and attempt to find
 - The solver tells me to guess 'oxide' next, which is the correct answer. 
 - You have solved Wordle.
 
-<table>
-  <tr>
-    <td align="center"><b>Solver</b></td>
-    <td align="center"><b>Wordle Output</b></td>
-  </tr>
-  <tr>
-    <td><img src="wordle2.png" width="350"></td>
-    <td><img src="wordl1.png" width="250"></td>
-  </tr>
-</table>
+    <table>
+      <tr>
+        <td align="center"><b>Solver</b></td>
+        <td align="center"><b>Wordle Output</b></td>
+      </tr>
+      <tr>
+        <td><img src="wordle2.png" width="350"></td>
+        <td><img src="wordl1.png" width="250"></td>
+      </tr>
+    </table>
 
 
 ## Requirements
