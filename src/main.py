@@ -1,4 +1,3 @@
-
 from typing import List, Dict, Any
 from pathlib import Path
 
@@ -18,18 +17,21 @@ def get_words() -> List[str]:
         PermissionError: Program was denied permission to access and read a dictionary file.
     """
     try:
-        with open(WORD_FILE, 'r') as w:
+        with open(WORD_FILE, "r") as w:
             lines = w.readlines()
             words = [
-                word for w in lines
+                word
+                for w in lines
                 if (word := w.strip().lower()).isalpha()
-                and word.isascii() and len(word) == 5
+                and word.isascii()
+                and len(word) == 5
             ]
     except FileNotFoundError as e:
         raise FileNotFoundError("No word / dictionary file was found.") from e
     except PermissionError as e:
         raise PermissionError("Access to dictionary file was denied.") from e
     return words
+
 
 def get_input() -> str:
     """
@@ -59,10 +61,11 @@ def get_input() -> str:
         return word
     raise ValueError("Too many invalid attempts.")
 
+
 def get_colours(
     overall_green: List[str] = None,
     overall_yellow: List[str] = None,
-    overall_grey: List[str] = None
+    overall_grey: List[str] = None,
 ) -> tuple[list[str], list[str], list[str], str]:
     """
     Collect feedback information for a guess and accumulate it across turns.
@@ -101,6 +104,7 @@ def get_colours(
     overall_grey.extend(greys)
     return overall_green, overall_yellow, overall_grey, choice
 
+
 def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
     """
     Ask the user which letters in their guess were a given colour.
@@ -113,9 +117,13 @@ def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
         List[str]: The letters (as single-character strings) of the given colour type.
     """
     while True:
-        letters = input(
-            f"What letters were {colour_name}? Enter none if no letters of that type were found: "
-        ).strip().lower()
+        letters = (
+            input(
+                f"What letters were {colour_name}? Enter none if no letters of that type were found: "
+            )
+            .strip()
+            .lower()
+        )
         if letters == "none":
             return []
         elif any(char not in choice for char in list(letters)):
@@ -124,11 +132,9 @@ def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
             break
     return list(letters)
 
+
 def compile_colours(
-    green: List[str],
-    grey: List[str],
-    yellow: List[str],
-    choice: str
+    green: List[str], grey: List[str], yellow: List[str], choice: str
 ) -> tuple[dict[Any, Any], dict[Any, Any], list[Any]]:
     """
     Convert per-turn colour feedback into structures used for filtering valid words.
@@ -160,6 +166,7 @@ def compile_colours(
 
     return green_letters, yellow_letters, grey_letters
 
+
 def get_frequency_score(valid_words_list: List[str]) -> List[str]:
     """
     Score candidate words by letter frequency across the candidate list and return the top 5.
@@ -182,7 +189,10 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
 
     # sort alphabet by frequency descending
     sorted_alphabet = {
-        k: v for k, v in sorted(alphabet.items(), key=lambda item: item[1], reverse=True)
+        k: v
+        for k, v in sorted(
+            alphabet.items(), key=lambda item: item[1], reverse=True
+        )
     }
 
     scores = []
@@ -194,11 +204,12 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
     best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
     return best_words
 
+
 def find_words(
     green: Dict[int, str],
     yellow: Dict[str, list],
     grey: List[str],
-    valid_words_list: List[str]
+    valid_words_list: List[str],
 ) -> tuple[list[Any], list[str]]:
     """
     Filter the word list down to words consistent with known green/yellow/grey constraints.
@@ -238,6 +249,7 @@ def find_words(
     best_words = get_frequency_score(valid)
     return valid, best_words
 
+
 def continue_program(valid_words: List[str]) -> None:
     """
     Loop to continue receiving feedback and printing recommended next guesses.
@@ -265,26 +277,40 @@ def continue_program(valid_words: List[str]) -> None:
             exit(0)
         else:
             overall_green, overall_yellow, overall_grey = [], [], []
-            overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
-            green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
-            valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+            overall_green, overall_yellow, overall_grey, choice = get_colours(
+                overall_green, overall_yellow, overall_grey
+            )
+            green_letters, yellow_letters, grey_letters = compile_colours(
+                overall_green, overall_grey, overall_yellow, choice
+            )
+            valid_words, best_words = find_words(
+                green_letters, yellow_letters, grey_letters, valid_words
+            )
             print("Pick one:")
             for word in best_words:
                 print(word, end=" ")
     raise ValueError("Too many invalid attempts.")
+
 
 def main():
     overall_green = []
     overall_yellow = []
     overall_grey = []
     valid_words = get_words()
-    overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
-    green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
-    valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+    overall_green, overall_yellow, overall_grey, choice = get_colours(
+        overall_green, overall_yellow, overall_grey
+    )
+    green_letters, yellow_letters, grey_letters = compile_colours(
+        overall_green, overall_grey, overall_yellow, choice
+    )
+    valid_words, best_words = find_words(
+        green_letters, yellow_letters, grey_letters, valid_words
+    )
     print("Pick one:")
     for word in best_words:
         print(word, end=" ")
     continue_program(valid_words)
+
 
 if __name__ == "__main__":
     main()
