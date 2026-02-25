@@ -20,12 +20,8 @@ def get_words() -> List[str]:
         with open(WORD_FILE, "r") as w:
             lines = w.readlines()
             words = [
-                word
-                for w in lines
-                if (word := w.strip().lower()).isalpha()
-                and word.isascii()
-                and len(word) == 5
-            ]
+                word for w in lines
+                if (word := w.strip().lower()).isalpha() and word.isascii() and len(word) == 5]
     except FileNotFoundError as e:
         raise FileNotFoundError("No word / dictionary file was found.") from e
     except PermissionError as e:
@@ -205,12 +201,33 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
     return best_words
 
 
+def word_pass_criteria(word, green: Dict[int, str], yellow: Dict[str, list], grey: List[str]):
+    if any(letter in word for letter in grey):
+        return False
+    if any(word[pos] != letter for pos, letter in green.items()):
+        return False
+
+    bad_yellow = False
+    for letter, positions in yellow.items():
+        if letter not in word:
+            bad_yellow = True
+            break
+        if any(word[pos] == letter for pos in positions):
+            bad_yellow = True
+            break
+
+    if bad_yellow:
+        return False
+
+    return True
+
+
 def find_words(
     green: Dict[int, str],
     yellow: Dict[str, list],
     grey: List[str],
     valid_words_list: List[str],
-) -> tuple[list[Any], list[str]]:
+) -> tuple[list[str], list[str]]:
     """
     Filter the word list down to words consistent with known green/yellow/grey constraints.
 
@@ -227,42 +244,27 @@ def find_words(
     """
     valid = []
     for word in valid_words_list:
-        if any(letter in word for letter in grey):
+        if not word_pass_criteria(word, green, yellow, grey):
             continue
-        if any(word[pos] != letter for pos, letter in green.items()):
-            continue
-
-        bad_yellow = False
-        for letter, positions in yellow.items():
-            if letter not in word:
-                bad_yellow = True
-                break
-            if any(word[pos] == letter for pos in positions):
-                bad_yellow = True
-                break
-
-        if bad_yellow:
-            continue
-
         valid.append(word)
 
     best_words = get_frequency_score(valid)
     return valid, best_words
 
 
-def continue_program(valid_words: List[str]) -> None:
+def continue_program() -> bool:
     """
-    Loop to continue receiving feedback and printing recommended next guesses.
+    Ask the user if they are finished.
 
-    Args:
-        valid_words (List[str]): Current list of candidate words to continue filtering.
+    Returns:
+        bool: True if finished, False otherwise.
 
     Raises:
         ValueError: Too many invalid attempts.
     """
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
-        word = input("\nAre you finished? ").strip().lower()
+        word = input("\nAre you finished? (y/n) ").strip().lower()
         if not word:
             print("Empty input. Try again.")
             continue
@@ -274,21 +276,10 @@ def continue_program(valid_words: List[str]) -> None:
             continue
         if word in ["y", "yes"]:
             print("You successfully have solved Wordle.")
-            exit(0)
-        else:
-            overall_green, overall_yellow, overall_grey = [], [], []
-            overall_green, overall_yellow, overall_grey, choice = get_colours(
-                overall_green, overall_yellow, overall_grey
-            )
-            green_letters, yellow_letters, grey_letters = compile_colours(
-                overall_green, overall_grey, overall_yellow, choice
-            )
-            valid_words, best_words = find_words(
-                green_letters, yellow_letters, grey_letters, valid_words
-            )
-            print("Pick one:")
-            for word in best_words:
-                print(word, end=" ")
+            return True
+        if word in ["n", "no"]:
+            return False
+        print("Please enter y/yes or n/no.")
     raise ValueError("Too many invalid attempts.")
 
 
@@ -297,19 +288,25 @@ def main():
     overall_yellow = []
     overall_grey = []
     valid_words = get_words()
-    overall_green, overall_yellow, overall_grey, choice = get_colours(
-        overall_green, overall_yellow, overall_grey
-    )
-    green_letters, yellow_letters, grey_letters = compile_colours(
-        overall_green, overall_grey, overall_yellow, choice
-    )
-    valid_words, best_words = find_words(
-        green_letters, yellow_letters, grey_letters, valid_words
-    )
-    print("Pick one:")
-    for word in best_words:
-        print(word, end=" ")
-    continue_program(valid_words)
+
+    while True:
+        overall_green, overall_yellow, overall_grey, choice = get_colours(
+            overall_green, overall_yellow, overall_grey
+        )
+        green_letters, yellow_letters, grey_letters = compile_colours(
+            overall_green, overall_grey, overall_yellow, choice
+        )
+        valid_words, best_words = find_words(
+            green_letters, yellow_letters, grey_letters, valid_words
+        )
+
+        print("Pick one:")
+        for word in best_words:
+            print(word, end=" ")
+        print()
+
+        if continue_program():
+            return
 
 
 if __name__ == "__main__":
