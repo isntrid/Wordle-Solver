@@ -1,5 +1,7 @@
 from typing import List, Any
 
+
+
 def get_words() -> List[str]:
     '''
     This function looks at words.txt, a text file containing hundreds of thousands of words
@@ -156,7 +158,7 @@ def compile_colours(green: List[str], grey: List[str], yellow: List[str], choice
 
     return green_letters, yellow_letters, grey_letters
 
-def get_frequency_score(valid_words_list: List[str]) -> List[str]:
+def get_frequency_score(valid_words_list: List[str]) -> int:
 
     alphabet = {}
 
@@ -177,10 +179,9 @@ def get_frequency_score(valid_words_list: List[str]) -> List[str]:
         word_score = sum(sorted_alphabet[letter] for letter in set(word))
         scores.append((word_score, word))
 
-    # getting the 5 highest scoring words
-    best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
+    best_word = max(scores)
 
-    return best_words
+    return best_word[1]
 
 def find_words(green: List[str], yellow: List[str], grey: List[str], valid_words_list: List[str]) -> str:
     """
@@ -218,9 +219,9 @@ def find_words(green: List[str], yellow: List[str], grey: List[str], valid_words
 
         valid.append(word)
 
-    best_words = get_frequency_score(valid)
+    best_word = get_frequency_score(valid)
 
-    return valid, best_words
+    return valid, best_word
 
 def continue_program(overall_green: List[str], overall_yellow: List[str], overall_grey: List[str], valid_words: List[str]) -> None:
     '''
@@ -238,7 +239,8 @@ def continue_program(overall_green: List[str], overall_yellow: List[str], overal
 
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
-        word = input("\nAre you finished? ").strip().lower()
+        word = input("Are you finished? ").strip().lower()
+
         if not word:
             print("Empty input. Try again.")
             continue
@@ -259,10 +261,8 @@ def continue_program(overall_green: List[str], overall_yellow: List[str], overal
 
             overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
             green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
-            valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
-            print("Pick one:")
-            for word in best_words:
-                print(word, end=" ")
+            valid_words, best_word = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+            print(best_word)
 
     raise ValueError("Too many invalid attempts.")
 
@@ -276,10 +276,8 @@ def main():
     overall_green, overall_yellow, overall_grey, choice = get_colours(overall_green, overall_yellow, overall_grey)
     green_letters, yellow_letters, grey_letters = compile_colours(overall_green, overall_grey, overall_yellow, choice)
 
-    valid_words, best_words = find_words(green_letters, yellow_letters, grey_letters, valid_words)
-    print("Pick one:")
-    for word in best_words:
-        print(word, end=" ")
+    valid_words, best_word = find_words(green_letters, yellow_letters, grey_letters, valid_words)
+    print(best_word)
     continue_program(overall_green, overall_yellow, overall_grey, valid_words)
 
 if __name__ == "__main__":
