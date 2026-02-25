@@ -239,7 +239,6 @@ def continue_program(overall_green: List[str], overall_yellow: List[str], overal
     MAX_ATTEMPTS = 5
     for _ in range(MAX_ATTEMPTS):
         word = input("\nAre you finished? ").strip().lower()
-
         if not word:
             print("Empty input. Try again.")
             continue
