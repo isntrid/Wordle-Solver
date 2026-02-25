@@ -1,4 +1,4 @@
-# Wordle Solver <img src="download.png" width="30">
+# Wordle Solver <img src="imgs/download.png" width="30">
 
 A command-line argument tool that narrows down possible Wordle answers based on the feedback from each guess.
 
@@ -34,8 +34,8 @@ Wordle is a simple 5-letter word game, where you input words and attempt to find
     <td align="center"><b>Wordle Output</b></td>
   </tr>
   <tr>
-    <td><img src="wordle2.png" width="350"></td>
-    <td><img src="wordl1.png" width="250"></td>
+    <td><img src="imgs/wordle2.png" width="350"></td>
+    <td><img src="imgs/wordl1.png" width="250"></td>
   </tr>
 </table>
 
