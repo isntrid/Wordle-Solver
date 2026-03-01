@@ -1,5 +1,6 @@
-from typing import List, Dict, Any
+from typing import List, Dict
 from pathlib import Path
+from collections import Counter
 
 WORD_FILE = Path(__file__).with_name("words.txt")
 
@@ -33,6 +34,9 @@ def get_input() -> str:
     """
     Prompt the user for a 5-letter guess word.
 
+    Performs basic validation (length, ASCII, and alphabetic-only). The user is given a limited
+    number of attempts before the function fails.
+
     Returns:
         str: The validated 5-letter word entered by the user.
 
@@ -58,56 +62,16 @@ def get_input() -> str:
     raise ValueError("Too many invalid attempts.")
 
 
-def get_colours(
-    overall_green: List[str] = None,
-    overall_yellow: List[str] = None,
-    overall_grey: List[str] = None,
-) -> tuple[list[str], list[str], list[str], str]:
-    """
-    Collect feedback information for a guess and accumulate it across turns.
-
-    Args:
-        overall_green (List[str] | None): Accumulated green letters so far.
-        overall_yellow (List[str] | None): Accumulated yellow letters so far.
-        overall_grey (List[str] | None): Accumulated grey letters so far.
-
-    Returns:
-        tuple[list[str], list[str], list[str], str]:
-            (overall_green, overall_yellow, overall_grey, choice) where:
-            - overall_green: all green letters seen so far
-            - overall_yellow: all yellow letters seen so far
-            - overall_grey: all grey letters seen so far
-            - choice: the user's guessed word for this turn
-    """
-    if overall_green is None:
-        overall_green = []
-    if overall_yellow is None:
-        overall_yellow = []
-    if overall_grey is None:
-        overall_grey = []
-
-    choice = get_input()
-    greens = get_feedback_letters("greens", choice)
-    yellows = get_feedback_letters("yellow", choice)
-    greys = list(choice)
-
-    for letter in greens + yellows:
-        if letter in greys:
-            greys.remove(letter)
-
-    overall_green.extend(greens)
-    overall_yellow.extend(yellows)
-    overall_grey.extend(greys)
-    return overall_green, overall_yellow, overall_grey, choice
-
-
 def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
     """
     Ask the user which letters in their guess were a given colour.
 
+    The user types the letters that received a specific Wordle feedback colour. The special
+    value "none" indicates no letters of that colour.
+
     Args:
         colour_name (str): The colour name ("green", "yellow", or "grey").
-        choice (str): The user's chosen word.
+        choice (str): The user's chosen word (used to validate that entered letters appear in it).
 
     Returns:
         List[str]: The letters (as single-character strings) of the given colour type.
@@ -129,135 +93,174 @@ def get_feedback_letters(colour_name: str, choice: str) -> List[str]:
     return list(letters)
 
 
-def compile_colours(
-    green: List[str], grey: List[str], yellow: List[str], choice: str
-) -> tuple[dict[Any, Any], dict[Any, Any], list[Any]]:
+def get_turn_feedback(choice: str):
     """
-    Convert per-turn colour feedback into structures used for filtering valid words.
+    Collect per-turn feedback for a guess and classify letters as green, yellow, or grey.
+
+    This prompts the user for green and yellow letters first, then derives grey letters as the
+    remaining letters from the guess after removing the reported green/yellow occurrences.
 
     Args:
-        green (List[str]): Letters marked green in the guess.
-        grey (List[str]): Letters marked grey in the guess.
-        yellow (List[str]): Letters marked yellow in the guess.
-        choice (str): The user's guessed word.
+        choice (str): The guessed 5-letter word for the current turn.
 
     Returns:
-        tuple[dict[int, str], dict[str, list[int]], list[str]]:
-            (green_letters, yellow_letters, grey_letters) where:
-            - green_letters maps index -> correct letter
-            - yellow_letters maps letter -> list of indices where that letter is NOT allowed
-            - grey_letters is a list of letters not in the answer (excluding known green/yellow)
+        tuple[list[str], list[str], list[str]]: (greens, yellows, greys) as lists of single-character strings.
     """
-    green_letters = {}
-    yellow_letters = {}
-    grey_letters = []
-
-    for pos, char in enumerate(choice):
-        if char in green:
-            green_letters[pos] = char
-        if char in yellow:
-            yellow_letters.setdefault(char, []).append(pos)
-        if char in grey and char not in green and char not in yellow:
-            grey_letters.append(char)
-
-    return green_letters, yellow_letters, grey_letters
+    greens = get_feedback_letters("green", choice)
+    yellows = get_feedback_letters("yellow", choice)
+    greys = list(choice)
+    for letter in greens + yellows:
+        if letter in greys:
+            greys.remove(letter)
+    return greens, yellows, greys
 
 
-def get_frequency_score(valid_words_list: List[str]) -> List[str]:
+def compile_turn(choice, greens, yellows, greys):
     """
-    Score candidate words by letter frequency across the candidate list and return the top 5.
+    Convert a single turn's feedback into constraint structures used for filtering candidate words.
 
-    Each word's score is computed as the sum of frequencies of its unique letters.
+    Produces:
+    - green_pos: exact known letters by position
+    - yellow_pos: letters that must appear, but not at specific positions
+    - min_counts: minimum occurrences required for each letter (from green + yellow evidence)
+    - exact_counts: exact occurrences for letters that were also marked grey in this guess
+      (i.e., no additional occurrences beyond the non-grey count)
 
     Args:
-        valid_words_list (List[str]): Candidate words to score.
+        choice (str): The guessed word.
+        greens (list[str]): Letters confirmed correct and in the correct position.
+        yellows (list[str]): Letters confirmed present but in the wrong position.
+        greys (list[str]): Letters not present beyond the confirmed non-grey occurrences.
 
     Returns:
-        List[str]: Up to 5 highest-scoring words (best first).
+        tuple[dict[int, str], dict[str, list[int]], Counter, dict[str, int]]:
+            (green_pos, yellow_pos, min_counts, exact_counts)
     """
-    alphabet = {}
-    for word in valid_words_list:
-        for letter in word:
-            if letter not in alphabet:
-                alphabet[letter] = 1
-            else:
-                alphabet[letter] += 1
+    green_pos = {}
+    yellow_pos = {}
+    min_counts = Counter()
+    exact_counts = {}
 
-    # sort alphabet by frequency descending
-    sorted_alphabet = {
-        k: v
-        for k, v in sorted(
-            alphabet.items(), key=lambda item: item[1], reverse=True
-        )
-    }
+    for i, char in enumerate(choice):
+        if char in greens:
+            green_pos[i] = char
+            min_counts[char] += 1
+        elif char in yellows:
+            yellow_pos.setdefault(char, []).append(i)
+            min_counts[char] += 1
 
-    scores = []
-    for word in valid_words_list:
-        word_score = sum(sorted_alphabet[letter] for letter in set(word))
-        scores.append((word_score, word))
+    for letter in set(choice):
+        total_in_guess = choice.count(letter)
+        non_grey = min_counts[letter]
+        if letter in greys:
+            exact_counts[letter] = non_grey
 
-    # getting the 5 highest scoring words
-    best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
-    return best_words
+    return green_pos, yellow_pos, min_counts, exact_counts
 
 
-def word_pass_criteria(word, green: Dict[int, str], yellow: Dict[str, list], grey: List[str]):
-    if any(letter in word for letter in grey):
-        return False
+def word_pass_criteria(word, green, yellow, min_counts, exact_counts):
+    """
+    Check whether a candidate word satisfies all accumulated Wordle constraints.
+
+    Constraints enforced:
+    - Green positions must match exactly.
+    - Yellow letters must exist in the word, but not in any disallowed positions.
+    - Each letter must appear at least min_counts[letter] times.
+    - For letters with exact_counts, the word must contain exactly that many occurrences.
+
+    Args:
+        word (str): Candidate word to validate.
+        green (dict[int, str]): Mapping of index -> required letter (green constraints).
+        yellow (dict[str, list[int]]): Mapping of letter -> positions it cannot occupy (yellow constraints).
+        min_counts (Counter): Minimum required occurrences for letters.
+        exact_counts (dict[str, int]): Exact required occurrences for letters (typically due to grey feedback).
+
+    Returns:
+        bool: True if the word passes all criteria; otherwise False.
+    """
+    wc = Counter(word)
+
     if any(word[pos] != letter for pos, letter in green.items()):
         return False
 
-    bad_yellow = False
     for letter, positions in yellow.items():
         if letter not in word:
-            bad_yellow = True
-            break
+            return False
         if any(word[pos] == letter for pos in positions):
-            bad_yellow = True
-            break
+            return False
 
-    if bad_yellow:
-        return False
+    for letter, count in min_counts.items():
+        if wc[letter] < count:
+            return False
+
+    for letter, count in exact_counts.items():
+        if wc[letter] != count:
+            return False
 
     return True
 
 
-def find_words(
-    green: Dict[int, str],
-    yellow: Dict[str, list],
-    grey: List[str],
-    valid_words_list: List[str],
-) -> tuple[list[str], list[str]]:
+def get_frequency_score(valid_words_list: List[str]) -> List[str]:
     """
-    Filter the word list down to words consistent with known green/yellow/grey constraints.
+    Rank candidate words by letter-frequency coverage and return a small set of top suggestions.
+
+    Scoring strategy:
+    - Build a frequency table over the candidate list counting how many words contain each letter.
+    - Score each word by summing frequencies of its *unique* letters (encourages diverse letters).
+    - Return the top 5 scoring words.
 
     Args:
-        green (Dict[int, str]): Known green letters by position (index -> letter).
-        yellow (Dict[str, list[int]]): Known yellow letters (letter -> list of forbidden positions).
-        grey (List[str]): Letters that must not appear in the word.
-        valid_words_list (List[str]): Words to filter.
+        valid_words_list (List[str]): Current candidate solutions.
 
     Returns:
-        tuple[List[str], List[str]]: (valid, best_words) where:
-            - valid is the filtered list of possible answers
-            - best_words is up to 5 recommended guesses from valid
+        List[str]: Up to 5 suggested words ordered from highest to lowest score.
+    """
+    alphabet = {}
+    for word in valid_words_list:
+        for letter in set(word):
+            alphabet[letter] = alphabet.get(letter, 0) + 1
+
+    scores = []
+    for word in valid_words_list:
+        score = sum(alphabet[letter] for letter in set(word))
+        scores.append((score, word))
+
+    best_words = [word for score, word in sorted(scores, reverse=True)[:5]]
+    return best_words
+
+
+def find_words(green, yellow, min_counts, exact_counts, valid_words_list):
+    """
+    Filter the current candidate list using constraints, then compute top suggestions.
+
+    Args:
+        green (dict[int, str]): Green position constraints.
+        yellow (dict[str, list[int]]): Yellow letter constraints (must appear, not in these positions).
+        min_counts (Counter): Minimum required occurrences for each letter.
+        exact_counts (dict[str, int]): Exact required occurrences for some letters.
+        valid_words_list (list[str]): Words to filter (typically the remaining candidates).
+
+    Returns:
+        tuple[list[str], list[str]]: (valid, best_words) where:
+            - valid is the filtered candidate list
+            - best_words is a short list of high-value guesses (from get_frequency_score)
     """
     valid = []
     for word in valid_words_list:
-        if not word_pass_criteria(word, green, yellow, grey):
-            continue
-        valid.append(word)
-
+        if word_pass_criteria(word, green, yellow, min_counts, exact_counts):
+            valid.append(word)
     best_words = get_frequency_score(valid)
     return valid, best_words
 
 
 def continue_program() -> bool:
     """
-    Ask the user if they are finished.
+    Ask the user whether the Wordle has been solved and the program should stop.
+
+    Accepts yes (y/yes) or no (n/no) with basic input validation and a limited number of attempts.
 
     Returns:
-        bool: True if finished, False otherwise.
+        bool: True if the user indicates they are finished; False otherwise.
 
     Raises:
         ValueError: Too many invalid attempts.
@@ -284,20 +287,41 @@ def continue_program() -> bool:
 
 
 def main():
-    overall_green = []
-    overall_yellow = []
-    overall_grey = []
+    """
+    Run the interactive Wordle solver loop.
+
+    Loads the dictionary, repeatedly collects the user's guess + feedback, accumulates constraints
+    across turns, filters remaining candidates, and prints a few high-value suggestions each round.
+    """
     valid_words = get_words()
+    cumulative_green = {}
+    cumulative_yellow = {}
+    cumulative_min = Counter()
+    cumulative_exact = {}
 
     while True:
-        overall_green, overall_yellow, overall_grey, choice = get_colours(
-            overall_green, overall_yellow, overall_grey
-        )
-        green_letters, yellow_letters, grey_letters = compile_colours(
-            overall_green, overall_grey, overall_yellow, choice
-        )
+        choice = get_input()
+        greens, yellows, greys = get_turn_feedback(choice)
+        g_pos, y_pos, min_counts, exact_counts = compile_turn(choice, greens, yellows, greys)
+
+        cumulative_green.update(g_pos)
+
+        for letter, positions in y_pos.items():
+            cumulative_yellow.setdefault(letter, [])
+            cumulative_yellow[letter].extend(positions)
+
+        for letter, count in min_counts.items():
+            cumulative_min[letter] = max(cumulative_min[letter], count)
+
+        for letter, count in exact_counts.items():
+            cumulative_exact[letter] = count
+
         valid_words, best_words = find_words(
-            green_letters, yellow_letters, grey_letters, valid_words
+            cumulative_green,
+            cumulative_yellow,
+            cumulative_min,
+            cumulative_exact,
+            valid_words
         )
 
         print("Pick one:")
